@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全台會考落點預測系統 (旗艦完整版)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --dream-color: #e67e22; 
+            --ideal-color: #27ae60; 
+            --safe-color: #2980b9;  
+        }
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: var(--bg-color); color: var(--primary-color); margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: var(--card-bg); padding: 30px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: #34495e; font-size: 1.8rem; margin-bottom: 5px; }
+        .subtitle { text-align: center; font-size: 0.95rem; color: #7f8c8d; margin-bottom: 20px; }
+        
+        .disclaimer { background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 12px 20px; margin-bottom: 25px; border-radius: 5px; font-size: 0.9rem; color: #856404; line-height: 1.5; }
+        .disclaimer strong { color: #d39e00; }
+
+        .input-group { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; max-width: 550px; margin-left: auto; margin-right: auto; }
+        .subject-row { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 10px 20px; border-radius: 8px; border: 1px solid #e9ecef; }
+        label { font-weight: bold; font-size: 1.05rem; color: #34495e; flex-shrink: 0; }
+        
+        select, input[type="text"] { padding: 8px 12px; border-radius: 8px; border: 1px solid #ced4da; font-size: 1rem; outline: none; width: 150px; text-align: center; }
+        select:focus, input[type="text"]:focus { border-color: var(--accent-color); }
+        input[type="text"] { width: 200px; text-align: left; }
+        
+        .btn-predict { width: 100%; max-width: 550px; display: block; margin: 0 auto; padding: 15px; background-color: var(--accent-color); color: white; border: none; border-radius: 10px; font-size: 1.3rem; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 6px rgba(231, 76, 60, 0.2); }
+        .btn-predict:hover { background-color: #c0392b; transform: translateY(-2px); }
+        
+        .tab-container { display: flex; justify-content: center; gap: 10px; margin-top: 30px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .tab-btn { background: #f8f9fa; border: 2px solid transparent; padding: 10px 25px; font-size: 1.1rem; font-weight: bold; color: #7f8c8d; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .tab-btn:hover { background: #e9ecef; }
+        .tab-btn.active { background: #fff; color: var(--accent-color); border: 2px solid var(--accent-color); box-shadow: 0 4px 6px rgba(231, 76, 60, 0.1); }
+
+        #results { margin-top: 20px; }
+        .section-title { margin-top: 35px; margin-bottom: 15px; font-size: 1.3rem; padding-left: 10px; border-left: 6px solid; }
+        .dream-title { color: var(--dream-color); border-color: var(--dream-color); }
+        .ideal-title { color: var(--ideal-color); border-color: var(--ideal-color); }
+        .safe-title { color: var(--safe-color); border-color: var(--safe-color); }
+        
+        /* 手機版表格滾動優化 (RWD) */
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; background: white; min-width: 600px; }
+        th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; color: #34495e; font-weight: bold; white-space: nowrap; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #fdfdfd; }
+        .user-score-box { background: #eaf2f8; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid #d4e6f1; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📝 全台會考落點預測系統</h1>
+    <p class="subtitle">請選擇考區並輸入成績，系統將自動套用該區專屬計分邏輯</p>
+
+    <div class="disclaimer">
+        <strong>⚠️ 免責聲明與使用提示：</strong><br>
+        本系統之落點分析結果僅供參考，主要依據過往各考區之錄取標準進行邏輯推估。實際錄取分數會因當年考題難易度、招生名額而有浮動。請務必搭配學校輔導室建議與官方最新招生簡章進行最終志願選填。
+    </div>
+
+    <div class="input-group">
+        <div class="subject-row" style="background: #e1f5fe; border-color: #b3e5fc;">
+            <label>📍 選擇考區</label>
+            <select id="region" onchange="toggleRegion()">
+                <option value="hsinchu">竹竹苗區</option>
+                <option value="taipei">北北基區</option>
+                <option value="taichung">中投區</option>
+                <option value="taoyuan">桃連區</option>
+                <option value="tainan">台南區</option>
+                <option value="kaohsiung">高雄區</option>
+            </select>
+        </div>
+        
+        <div class="subject-row" style="background: #fdfefe;">
+            <label>👤 性別</label>
+            <select id="gender" onchange="if(document.getElementById('results').innerHTML !== '') calculateResults();"><option value="m">男生</option><option value="f">女生</option></select>
+        </div>
+
+        <div class="subject-row" style="background: #fdfefe;">
+            <label>🎯 科系偏好</label>
+            <select id="dept-filter" onchange="if(document.getElementById('results').innerHTML !== '') calculateResults();">
+                <option value="all">全部顯示</option>
+                <option value="normal">僅普通科</option>
+                <option value="vocational">僅技職/綜合高中</option>
+            </select>
+        </div>
+        <div class="subject-row" style="background: #fdfefe;">
+            <label>🔍 快速搜尋</label>
+            <input type="text" id="searchInput" placeholder="輸入學校或科系名稱..." onkeyup="if(document.getElementById('results').innerHTML !== '') calculateResults();">
+        </div>
+
+        <div class="subject-row"><label>📖 國文</label><select id="chi" class="grade-input"><option value="6,2">A++</option><option value="6,1">A+</option><option value="6,0">A</option><option value="4,2">B++</option><option value="4,1">B+</option><option value="4,0" selected>B</option><option value="2,0">C</option></select></div>
+        <div class="subject-row"><label>🔤 英文</label><select id="eng" class="grade-input"><option value="6,2">A++</option><option value="6,1">A+</option><option value="6,0">A</option><option value="4,2">B++</option><option value="4,1">B+</option><option value="4,0" selected>B</option><option value="2,0">C</option></select></div>
+        <div class="subject-row"><label>📐 數學</label><select id="mat" class="grade-input"><option value="6,2">A++</option><option value="6,1">A+</option><option value="6,0">A</option><option value="4,2">B++</option><option value="4,1">B+</option><option value="4,0" selected>B</option><option value="2,0">C</option></select></div>
+        <div class="subject-row"><label>🔬 自然</label><select id="sci" class="grade-input"><option value="6,2">A++</option><option value="6,1">A+</option><option value="6,0">A</option><option value="4,2">B++</option><option value="4,1">B+</option><option value="4,0" selected>B</option><option value="2,0">C</option></select></div>
+        <div class="subject-row"><label>🌍 社會</label><select id="soc" class="grade-input"><option value="6,2">A++</option><option value="6,1">A+</option><option value="6,0">A</option><option value="4,2">B++</option><option value="4,1">B+</option><option value="4,0" selected>B</option><option value="2,0">C</option></select></div>
+        
+        <div class="subject-row" id="writing-row" style="display: none; background: #fff3e0; border-color: #ffe0b2;">
+            <label>✍️ 寫作測驗</label>
+            <select id="writing">
+                <option value="6">6級分</option><option value="5" selected>5級分</option><option value="4">4級分</option>
+                <option value="3">3級分</option><option value="2">2級分</option><option value="1">1級分</option><option value="0">0級分</option>
+            </select>
+        </div>
+    </div>
+
+    <button class="btn-predict" onclick="initCalculate()">開始落點分析</button>
+
+    <div id="year-tabs" class="tab-container" style="display: none;">
+        <button id="tab-114" class="tab-btn active" onclick="switchYear('114')">114年</button>
+        <button id="tab-113" class="tab-btn" onclick="switchYear('113')">113年</button>
+    </div>
+
+    <div id="results"></div>
+</div>
+
+<script>
+    let currentYear = '114';
+
+    // ========================================
+    // ★ 終極完整資料庫 (全台六區) ★
+    // ========================================
+    const data113 = [{"school": "實驗中學", "department": "普通科", "gender": "all", "score": 30, "a": 5, "aplus": 10, "b": 0, "bplus": 0}, {"school": "新竹高中", "department": "普通科", "gender": "m", "score": 30, "a": 5, "aplus": 6, "b": 0, "bplus": 0}, {"school": "新竹女中", "department": "普通科", "gender": "f", "score": 30, "a": 5, "aplus": 4, "b": 0, "bplus": 0}, {"school": "竹北高中", "department": "普通科", "gender": "all", "score": 30, "a": 5, "aplus": 1, "b": 0, "bplus": 0}, {"school": "建功高中", "department": "普通科", "gender": "all", "score": 28, "a": 4, "aplus": 5, "b": 1, "bplus": 1}, {"school": "竹北高中", "department": "資訊科", "gender": "all", "score": 28, "a": 4, "aplus": 4, "b": 1, "bplus": 2}, {"school": "六家高中", "department": "普通科", "gender": "all", "score": 28, "a": 4, "aplus": 3, "b": 1, "bplus": 2}, {"school": "新竹高商", "department": "綜合高中", "gender": "all", "score": 28, "a": 4, "aplus": 1, "b": 1, "bplus": 1}, {"school": "新竹高工", "department": "電機科", "gender": "all", "score": 28, "a": 4, "aplus": 0, "b": 1, "bplus": 2}, {"school": "義民高中", "department": "普通科", "gender": "all", "score": 26, "a": 3, "aplus": 4, "b": 2, "bplus": 4}, {"school": "竹北高中", "department": "商業經營科", "gender": "all", "score": 26, "a": 3, "aplus": 4, "b": 2, "bplus": 3}, {"school": "新竹高工", "department": "資訊科", "gender": "all", "score": 26, "a": 3, "aplus": 3, "b": 2, "bplus": 2}, {"school": "新竹高工", "department": "化工科", "gender": "all", "score": 26, "a": 3, "aplus": 0, "b": 2, "bplus": 3}, {"school": "曙光女中", "department": "普通科", "gender": "f", "score": 24, "a": 2, "aplus": 2, "b": 3, "bplus": 4}, {"school": "新竹高工", "department": "室設科", "gender": "all", "score": 24, "a": 2, "aplus": 1, "b": 3, "bplus": 6}, {"school": "新竹高工", "department": "機械科", "gender": "all", "score": 24, "a": 2, "aplus": 1, "b": 3, "bplus": 5}, {"school": "新竹高商", "department": "應用英語科", "gender": "all", "score": 24, "a": 2, "aplus": 1, "b": 3, "bplus": 0}, {"school": "竹東高中", "department": "普通科", "gender": "all", "score": 24, "a": 2, "aplus": 0, "b": 3, "bplus": 5}, {"school": "新竹高工", "department": "製圖科", "gender": "all", "score": 24, "a": 2, "aplus": 0, "b": 3, "bplus": 4}, {"school": "新竹高商", "department": "資料處理科", "gender": "all", "score": 24, "a": 2, "aplus": 0, "b": 3, "bplus": 3}, {"school": "成德高中", "department": "普通科", "gender": "all", "score": 24, "a": 2, "aplus": 0, "b": 3, "bplus": 3}, {"school": "新竹高工", "department": "板金科", "gender": "all", "score": 22, "a": 1, "aplus": 1, "b": 4, "bplus": 8}, {"school": "香山高中", "department": "普通科", "gender": "all", "score": 22, "a": 1, "aplus": 1, "b": 4, "bplus": 8}, {"school": "湖口高中", "department": "普通科", "gender": "all", "score": 22, "a": 1, "aplus": 1, "b": 4, "bplus": 4}, {"school": "新竹高商", "department": "國際貿易科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 8}, {"school": "竹南高中", "department": "普通科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 7}, {"school": "關西高中", "department": "综合高中", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 6}, {"school": "香山高中", "department": "資料處理科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 3}, {"school": "香山高中", "department": "美術工藝科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 2}, {"school": "湖口高中", "department": "商業經營科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 9}, {"school": "磐石高中", "department": "普通科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 9}, {"school": "關西高中", "department": "食品加工科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 6}, {"school": "關西高中", "department": "家政科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 6}, {"school": "曙光女中", "department": "商業經營科", "gender": "f", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 6}, {"school": "義民高中", "department": "資訊科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 6}, {"school": "關西高中", "department": "畜產保健科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 5}, {"school": "曙光女中", "department": "應用英語科", "gender": "f", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 5}, {"school": "光復高中", "department": "普通科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 5}, {"school": "曙光女中", "department": "應用日語科", "gender": "f", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 5}, {"school": "關西高中", "department": "園藝科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 4}, {"school": "與華高中", "department": "普通科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 4}, {"school": "苗栗高中", "department": "普通科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 4}, {"school": "苗栗高商", "department": "應用英語科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 4}, {"school": "竹南高中", "department": "化工科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 4}, {"school": "義民高中", "department": "廣告設計科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 4}, {"school": "苗栗高商", "department": "多媒體設計科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 3}, {"school": "磐石高中", "department": "電機科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 3}, {"school": "苑裡商中（國）", "department": "普通科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 3}, {"school": "義民高中", "department": "資料處理科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 3}, {"school": "仰德高中", "department": "餐飲管理科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 3}, {"school": "苗栗農工", "department": "電機科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 2}, {"school": "磐石高中", "department": "資料處理科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 1}, {"school": "義民高中", "department": "幼兒保育科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 0}, {"school": "興華高中", "department": "資料處理科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 0}];
+    const data114 = [{"school": "竹科實中", "department": "普通科", "gender": "all", "score": 30, "a": 5, "aplus": 10, "b": 0, "bplus": 0}, {"school": "新竹高中", "department": "普通科", "gender": "m", "score": 30, "a": 5, "aplus": 5, "b": 0, "bplus": 0}, {"school": "新竹女中", "department": "普通科", "gender": "f", "score": 30, "a": 5, "aplus": 4, "b": 0, "bplus": 0}, {"school": "竹北高中", "department": "普通科", "gender": "all", "score": 28, "a": 4, "aplus": 5, "b": 1, "bplus": 2}, {"school": "竹北高中", "department": "資訊科", "gender": "all", "score": 28, "a": 4, "aplus": 3, "b": 1, "bplus": 2}, {"school": "建功高中", "department": "普通科", "gender": "all", "score": 28, "a": 4, "aplus": 2, "b": 1, "bplus": 2}, {"school": "六家高中", "department": "普通科", "gender": "all", "score": 26, "a": 3, "aplus": 3, "b": 2, "bplus": 3}, {"school": "新竹高工", "department": "電機科", "gender": "all", "score": 26, "a": 3, "aplus": 2, "b": 2, "bplus": 3}, {"school": "新竹高商", "department": "綜合高中", "gender": "all", "score": 26, "a": 3, "aplus": 2, "b": 2, "bplus": 3}, {"school": "義民高中", "department": "普通科", "gender": "all", "score": 26, "a": 3, "aplus": 1, "b": 2, "bplus": 3}, {"school": "竹北高中", "department": "商業經營科", "gender": "all", "score": 26, "a": 3, "aplus": 1, "b": 2, "bplus": 2}, {"school": "新竹高工", "department": "資訊科", "gender": "all", "score": 26, "a": 3, "aplus": 0, "b": 2, "bplus": 3}, {"school": "曙光女中", "department": "普通科", "gender": "f", "score": 24, "a": 2, "aplus": 1, "b": 3, "bplus": 4}, {"school": "新竹高工", "department": "化工科", "gender": "all", "score": 24, "a": 2, "aplus": 0, "b": 3, "bplus": 6}, {"school": "新竹高工", "department": "室內設計", "gender": "all", "score": 24, "a": 2, "aplus": 0, "b": 3, "bplus": 2}, {"school": "新竹高工", "department": "製圖科", "gender": "all", "score": 22, "a": 1, "aplus": 2, "b": 4, "bplus": 6}, {"school": "新竹高商", "department": "商業經營科", "gender": "all", "score": 22, "a": 1, "aplus": 1, "b": 4, "bplus": 2}, {"school": "新竹高商", "department": "應用英文科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 7}, {"school": "新竹高工", "department": "板金科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 6}, {"school": "成德高中", "department": "普通科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 5}, {"school": "竹東高中", "department": "普通科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 5}, {"school": "竹南高中", "department": "普通科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 4}, {"school": "新竹高商", "department": "資料處理科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 2}, {"school": "湖口高中", "department": "普通科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 8}, {"school": "香山高中", "department": "普通科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 8}, {"school": "新竹高商", "department": "國際貿易科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 7}, {"school": "曙光女中", "department": "商業經營科", "gender": "f", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 6}, {"school": "關西高中", "department": "綜合高中", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 6}, {"school": "湖口高中", "department": "商業經營科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 5}, {"school": "竹南高中", "department": "化工科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 5}, {"school": "曙光女中", "department": "應用英文科", "gender": "f", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 4}, {"school": "香山高中", "department": "資料處理科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 4}, {"school": "香山高中", "department": "美術工藝科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 4}, {"school": "磐石高中", "department": "普通科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 3}, {"school": "忠信高中", "department": "綜合高中科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 3}, {"school": "義民高中", "department": "廣告設計科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 3}, {"school": "義民高中", "department": "資訊科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 2}, {"school": "磐石高中", "department": "電機科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 2}, {"school": "關西高中", "department": "畜產科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 2}, {"school": "光復高中", "department": "普通科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 1}, {"school": "義民高中", "department": "資料處理科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 0}, {"school": "曙光女中", "department": "應用日語科", "gender": "f", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 0}, {"school": "苗栗大同高中", "department": "普通科", "gender": "all", "score": 18, "a": 0, "aplus": 0, "b": 4, "bplus": 4}, {"school": "苗栗卓蘭高中", "department": "普通科", "gender": "all", "score": 18, "a": 0, "aplus": 0, "b": 4, "bplus": 4}, {"school": "苗栗興華高中", "department": "普通科", "gender": "all", "score": 18, "a": 0, "aplus": 0, "b": 4, "bplus": 2}, {"school": "內思高工", "department": "電機科", "gender": "all", "score": 18, "a": 0, "aplus": 0, "b": 4, "bplus": 1}, {"school": "義民高中", "department": "幼保科", "gender": "all", "score": 18, "a": 0, "aplus": 0, "b": 4, "bplus": 1}, {"school": "苗栗農工", "department": "機械科", "gender": "all", "score": 18, "a": 0, "aplus": 0, "b": 4, "bplus": 0}, {"school": "苗栗興華高中", "department": "商業經營科", "gender": "all", "score": 16, "a": 0, "aplus": 0, "b": 3, "bplus": 3}, {"school": "光復高中", "department": "多媒體設計科", "gender": "all", "score": 16, "a": 0, "aplus": 0, "b": 3, "bplus": 0}, {"school": "大湖農工", "department": "室內設計", "gender": "all", "score": 16, "a": 0, "aplus": 0, "b": 3, "bplus": 0}];
+
+    const dataTaipei113 = [{"school": "建國中學", "department": "普通科", "gender": "m", "score": "34.8", "a": 5, "aplus": 9, "b": 0, "bplus": 0, "parsed_score": 34.8}, {"school": "北一女中", "department": "普通科", "gender": "f", "score": "33.8", "a": 5, "aplus": 8, "b": 0, "bplus": 0, "parsed_score": 33.8}, {"school": "師附(男)", "department": "普通科", "gender": "m", "score": "33.8", "a": 5, "aplus": 8, "b": 0, "bplus": 0, "parsed_score": 33.8}, {"school": "師附(女)", "department": "普通科", "gender": "f", "score": "33.6", "a": 5, "aplus": 8, "b": 0, "bplus": 0, "parsed_score": 33.6}, {"school": "成功高中", "department": "普通科", "gender": "m", "score": "32.6", "a": 5, "aplus": 7, "b": 0, "bplus": 0, "parsed_score": 32.6}, {"school": "中山女高", "department": "普通科", "gender": "f", "score": "31.6", "a": 5, "aplus": 6, "b": 0, "bplus": 0, "parsed_score": 31.6}, {"school": "松山(男)", "department": "普通科", "gender": "all", "score": "31.6", "a": 5, "aplus": 6, "b": 0, "bplus": 0, "parsed_score": 31.6}, {"school": "松山(女)", "department": "普通科", "gender": "all", "score": "30.6", "a": 5, "aplus": 5, "b": 0, "bplus": 0, "parsed_score": 30.6}, {"school": "大同高中", "department": "普通科", "gender": "all", "score": "30.6", "a": 5, "aplus": 5, "b": 0, "bplus": 0, "parsed_score": 30.6}, {"school": "中崙高中", "department": "普通科", "gender": "all", "score": "29.6", "a": 4, "aplus": 7, "b": 1, "bplus": 0, "parsed_score": 29.6}, {"school": "政大附中", "department": "普通科", "gender": "all", "score": "28.8", "a": 4, "aplus": 6, "b": 1, "bplus": 0, "parsed_score": 28.8}, {"school": "板中(男)", "department": "普通科", "gender": "m", "score": "28.8", "a": 4, "aplus": 6, "b": 1, "bplus": 0, "parsed_score": 28.8}, {"school": "板中(女)", "department": "普通科", "gender": "f", "score": "28.6", "a": 4, "aplus": 6, "b": 1, "bplus": 0, "parsed_score": 28.6}, {"school": "麗山高中", "department": "普通科", "gender": "all", "score": "28.6", "a": 4, "aplus": 6, "b": 1, "bplus": 0, "parsed_score": 28.6}, {"school": "成淵高中", "department": "普通科", "gender": "all", "score": "28.6", "a": 4, "aplus": 6, "b": 1, "bplus": 0, "parsed_score": 28.6}, {"school": "大直高中", "department": "普通科", "gender": "all", "score": "27.8", "a": 4, "aplus": 5, "b": 1, "bplus": 0, "parsed_score": 27.8}, {"school": "和平高中", "department": "普通科", "gender": "all", "score": "27.6", "a": 4, "aplus": 5, "b": 1, "bplus": 0, "parsed_score": 27.6}, {"school": "海山高中", "department": "普通科", "gender": "all", "score": "27.6", "a": 4, "aplus": 5, "b": 1, "bplus": 0, "parsed_score": 27.6}, {"school": "西松高中", "department": "普通科", "gender": "all", "score": "26.6", "a": 4, "aplus": 4, "b": 1, "bplus": 0, "parsed_score": 26.6}, {"school": "明倫高中", "department": "普通科", "gender": "all", "score": "26.6", "a": 4, "aplus": 4, "b": 1, "bplus": 0, "parsed_score": 26.6}, {"school": "北大高中", "department": "普通科", "gender": "all", "score": "25.6", "a": 4, "aplus": 3, "b": 1, "bplus": 0, "parsed_score": 25.6}, {"school": "內湖(男)", "department": "普通科", "gender": "m", "score": "25.6", "a": 4, "aplus": 3, "b": 1, "bplus": 0, "parsed_score": 25.6}, {"school": "內湖(女)", "department": "普通科", "gender": "f", "score": "24.8", "a": 4, "aplus": 2, "b": 1, "bplus": 0, "parsed_score": 24.8}, {"school": "百齡高中", "department": "普通科", "gender": "all", "score": "24.6", "a": 4, "aplus": 2, "b": 1, "bplus": 0, "parsed_score": 24.6}, {"school": "中正高中", "department": "普通科", "gender": "all", "score": "24.6", "a": 4, "aplus": 2, "b": 1, "bplus": 0, "parsed_score": 24.6}, {"school": "景美女中", "department": "普通科", "gender": "f", "score": "22.8", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 22.8}, {"school": "陽明高中", "department": "普通科", "gender": "all", "score": "22.8", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 22.8}, {"school": "中和高中", "department": "普通科", "gender": "all", "score": "22.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 22.6}, {"school": "南湖高中", "department": "普通科", "gender": "all", "score": "22.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 22.6}, {"school": "永平高中", "department": "普通科", "gender": "all", "score": "21.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 21.6}, {"school": "新莊高中", "department": "普通科", "gender": "all", "score": "21.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 21.6}, {"school": "南港高中", "department": "普通科", "gender": "all", "score": "21.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 21.6}, {"school": "華江高中", "department": "普通科", "gender": "all", "score": "20.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 20.6}, {"school": "基隆安樂", "department": "普通科", "gender": "all", "score": "20.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 20.6}, {"school": "丹鳳高中", "department": "普通科", "gender": "all", "score": "20.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 20.6}, {"school": "大安高工", "department": "綜合高中/職科", "gender": "all", "score": "27.8~20.6", "a": 4, "aplus": 5, "b": 1, "bplus": 0, "parsed_score": 20.6}, {"school": "新北高中", "department": "普通科", "gender": "all", "score": "19.8", "a": 0, "aplus": 0, "b": 5, "bplus": 9, "parsed_score": 19.8}, {"school": "永春高中", "department": "普通科", "gender": "all", "score": "19.6", "a": 0, "aplus": 0, "b": 5, "bplus": 9, "parsed_score": 19.6}, {"school": "新店高中", "department": "普通科", "gender": "all", "score": "19.6", "a": 0, "aplus": 0, "b": 5, "bplus": 9, "parsed_score": 19.6}, {"school": "華僑高中", "department": "普通科", "gender": "all", "score": "19.6", "a": 0, "aplus": 0, "b": 5, "bplus": 9, "parsed_score": 19.6}, {"school": "竹圍高中", "department": "普通科", "gender": "all", "score": "19.6", "a": 0, "aplus": 0, "b": 5, "bplus": 9, "parsed_score": 19.6}, {"school": "錦和高中", "department": "普通科", "gender": "all", "score": "18.6", "a": 0, "aplus": 0, "b": 5, "bplus": 8, "parsed_score": 18.6}, {"school": "三民高中", "department": "普通科", "gender": "all", "score": "18.6", "a": 0, "aplus": 0, "b": 5, "bplus": 8, "parsed_score": 18.6}, {"school": "萬芳高中", "department": "普通科", "gender": "all", "score": "17.8", "a": 0, "aplus": 0, "b": 5, "bplus": 7, "parsed_score": 17.8}, {"school": "大理高中", "department": "普通科", "gender": "all", "score": "17.6", "a": 0, "aplus": 0, "b": 5, "bplus": 7, "parsed_score": 17.6}, {"school": "光復高中", "department": "普通科", "gender": "all", "score": "17.6", "a": 0, "aplus": 0, "b": 5, "bplus": 7, "parsed_score": 17.6}, {"school": "三重高中", "department": "普通科", "gender": "all", "score": "17.6", "a": 0, "aplus": 0, "b": 5, "bplus": 7, "parsed_score": 17.6}, {"school": "士林高商", "department": "綜合高中/職科", "gender": "all", "score": "23.8~17.6", "a": 4, "aplus": 1, "b": 1, "bplus": 0, "parsed_score": 17.6}, {"school": "育成高中", "department": "普通科", "gender": "all", "score": "16.6", "a": 0, "aplus": 0, "b": 5, "bplus": 6, "parsed_score": 16.6}, {"school": "松山家商", "department": "綜合高中/職科", "gender": "all", "score": "21.6~16.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 16.6}, {"school": "清水高中", "department": "普通科", "gender": "all", "score": "15.6", "a": 0, "aplus": 0, "b": 5, "bplus": 5, "parsed_score": 15.6}, {"school": "安康高中", "department": "普通科", "gender": "all", "score": "15.6", "a": 0, "aplus": 0, "b": 5, "bplus": 5, "parsed_score": 15.6}, {"school": "樹林高中", "department": "普通科", "gender": "all", "score": "15.6", "a": 0, "aplus": 0, "b": 5, "bplus": 5, "parsed_score": 15.6}, {"school": "松山工農", "department": "綜合高中/職科", "gender": "all", "score": "21.6~15.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 15.6}, {"school": "林口高中", "department": "普通科", "gender": "all", "score": "14.6", "a": 0, "aplus": 0, "b": 5, "bplus": 4, "parsed_score": 14.6}, {"school": "新北高工", "department": "綜合高中/職科", "gender": "all", "score": "18.6~14.6", "a": 0, "aplus": 0, "b": 5, "bplus": 8, "parsed_score": 14.6}, {"school": "泰山高中", "department": "普通科", "gender": "all", "score": "14.4", "a": 0, "aplus": 0, "b": 5, "bplus": 4, "parsed_score": 14.4}, {"school": "復興高中", "department": "普通科", "gender": "all", "score": "13.6", "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 13.6}, {"school": "秀峰高中", "department": "普通科", "gender": "all", "score": "13.6", "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 13.6}, {"school": "明德高中", "department": "普通科", "gender": "all", "score": "13.6", "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 13.6}, {"school": "石碇高中", "department": "普通科", "gender": "all", "score": "13.6", "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 13.6}, {"school": "淡水商工", "department": "綜合高中/職科", "gender": "all", "score": "18.6~13.6", "a": 0, "aplus": 0, "b": 5, "bplus": 8, "parsed_score": 13.6}, {"school": "三重商工", "department": "綜合高中/職科", "gender": "all", "score": "18.6~13.6", "a": 0, "aplus": 0, "b": 5, "bplus": 8, "parsed_score": 13.6}, {"school": "內湖高工", "department": "綜合高中/職科", "gender": "all", "score": "17.6~12.6", "a": 0, "aplus": 0, "b": 5, "bplus": 7, "parsed_score": 12.6}, {"school": "南港高工", "department": "綜合高中/職科", "gender": "all", "score": "16.6~12.6", "a": 0, "aplus": 0, "b": 5, "bplus": 6, "parsed_score": 12.6}, {"school": "木柵高工", "department": "綜合高中/職科", "gender": "all", "score": "16.6~12.6", "a": 0, "aplus": 0, "b": 5, "bplus": 6, "parsed_score": 12.6}, {"school": "樟樹高工", "department": "綜合高中/職科", "gender": "all", "score": "15.6~11.6", "a": 0, "aplus": 0, "b": 5, "bplus": 5, "parsed_score": 11.6}, {"school": "鶯歌工商", "department": "綜合高中/職科", "gender": "all", "score": "15.6~11.6", "a": 0, "aplus": 0, "b": 5, "bplus": 5, "parsed_score": 11.6}, {"school": "基隆商工", "department": "綜合高中/職科", "gender": "all", "score": "15.6~11.6", "a": 0, "aplus": 0, "b": 5, "bplus": 5, "parsed_score": 11.6}, {"school": "海大附中", "department": "綜合高中/職科", "gender": "all", "score": "14.6~10.6", "a": 0, "aplus": 0, "b": 5, "bplus": 4, "parsed_score": 10.6}, {"school": "瑞芳高工", "department": "綜合高中/職科", "gender": "all", "score": "14.6~10.6", "a": 0, "aplus": 0, "b": 5, "bplus": 4, "parsed_score": 10.6}, {"school": "基隆女中", "department": "普通科", "gender": "f", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "基中(男)", "department": "普通科", "gender": "m", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "基中(女)", "department": "普通科", "gender": "f", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "基隆暖暖", "department": "普通科", "gender": "all", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "基隆中山", "department": "普通科", "gender": "all", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "基隆八斗", "department": "普通科", "gender": "all", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "雙溪高中", "department": "普通科", "gender": "all", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "金山高中", "department": "普通科", "gender": "all", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}];
+    const dataTaipei114 = [{"school": "建國中學", "department": "普通科", "gender": "m", "score": "34.6", "a": 5, "aplus": 9, "b": 0, "bplus": 0, "parsed_score": 34.6}, {"school": "北一女中", "department": "普通科", "gender": "f", "score": "33.8", "a": 5, "aplus": 8, "b": 0, "bplus": 0, "parsed_score": 33.8}, {"school": "師附(男)", "department": "普通科", "gender": "m", "score": "33.8", "a": 5, "aplus": 8, "b": 0, "bplus": 0, "parsed_score": 33.8}, {"school": "師附(女)", "department": "普通科", "gender": "f", "score": "33.6", "a": 5, "aplus": 8, "b": 0, "bplus": 0, "parsed_score": 33.6}, {"school": "成功高中", "department": "普通科", "gender": "m", "score": "31.8", "a": 5, "aplus": 7, "b": 0, "bplus": 0, "parsed_score": 31.8}, {"school": "中山女高", "department": "普通科", "gender": "f", "score": "31.6", "a": 5, "aplus": 6, "b": 0, "bplus": 0, "parsed_score": 31.6}, {"school": "松山(男)", "department": "普通科", "gender": "m", "score": "31.6", "a": 5, "aplus": 6, "b": 0, "bplus": 0, "parsed_score": 31.6}, {"school": "松山(女)", "department": "普通科", "gender": "f", "score": "30.6", "a": 5, "aplus": 5, "b": 0, "bplus": 0, "parsed_score": 30.6}, {"school": "大同高中", "department": "普通科", "gender": "all", "score": "29.8", "a": 5, "aplus": 4, "b": 0, "bplus": 0, "parsed_score": 29.8}, {"school": "中崙高中", "department": "普通科", "gender": "all", "score": "28.8", "a": 4, "aplus": 7, "b": 1, "bplus": 0, "parsed_score": 28.8}, {"school": "政大附中", "department": "普通科", "gender": "all", "score": "28.6", "a": 4, "aplus": 6, "b": 1, "bplus": 0, "parsed_score": 28.6}, {"school": "板中(男)", "department": "普通科", "gender": "m", "score": "28.6", "a": 4, "aplus": 6, "b": 1, "bplus": 0, "parsed_score": 28.6}, {"school": "板中(女)", "department": "普通科", "gender": "f", "score": "28.6", "a": 4, "aplus": 6, "b": 1, "bplus": 0, "parsed_score": 28.6}, {"school": "麗山高中", "department": "普通科", "gender": "all", "score": "27.8", "a": 4, "aplus": 6, "b": 1, "bplus": 0, "parsed_score": 27.8}, {"school": "成淵高中", "department": "普通科", "gender": "all", "score": "27.8", "a": 4, "aplus": 6, "b": 1, "bplus": 0, "parsed_score": 27.8}, {"school": "大直高中", "department": "普通科", "gender": "all", "score": "27.6", "a": 4, "aplus": 5, "b": 1, "bplus": 0, "parsed_score": 27.6}, {"school": "和平高中", "department": "普通科", "gender": "all", "score": "26.8", "a": 4, "aplus": 4, "b": 1, "bplus": 0, "parsed_score": 26.8}, {"school": "海山高中", "department": "普通科", "gender": "all", "score": "26.8", "a": 4, "aplus": 4, "b": 1, "bplus": 0, "parsed_score": 26.8}, {"school": "西松高中", "department": "普通科", "gender": "all", "score": "26.6", "a": 4, "aplus": 4, "b": 1, "bplus": 0, "parsed_score": 26.6}, {"school": "明倫高中", "department": "普通科", "gender": "all", "score": "25.8", "a": 4, "aplus": 3, "b": 1, "bplus": 0, "parsed_score": 25.8}, {"school": "北大高中", "department": "普通科", "gender": "all", "score": "25.6", "a": 4, "aplus": 3, "b": 1, "bplus": 0, "parsed_score": 25.6}, {"school": "內湖(男)", "department": "普通科", "gender": "m", "score": "24.8", "a": 4, "aplus": 2, "b": 1, "bplus": 0, "parsed_score": 24.8}, {"school": "內湖(女)", "department": "普通科", "gender": "f", "score": "24.6", "a": 4, "aplus": 2, "b": 1, "bplus": 0, "parsed_score": 24.6}, {"school": "百齡高中", "department": "普通科", "gender": "all", "score": "23.8", "a": 4, "aplus": 1, "b": 1, "bplus": 0, "parsed_score": 23.8}, {"school": "中正高中", "department": "普通科", "gender": "all", "score": "23.8", "a": 4, "aplus": 1, "b": 1, "bplus": 0, "parsed_score": 23.8}, {"school": "景美女中", "department": "普通科", "gender": "f", "score": "22.8", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 22.8}, {"school": "陽明高中", "department": "普通科", "gender": "all", "score": "22.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 22.6}, {"school": "中和高中", "department": "普通科", "gender": "all", "score": "21.8", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 21.8}, {"school": "南湖高中", "department": "普通科", "gender": "all", "score": "21.8", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 21.8}, {"school": "永平高中", "department": "普通科", "gender": "all", "score": "21.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 21.6}, {"school": "新莊高中", "department": "普通科", "gender": "all", "score": "21.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 21.6}, {"school": "南港高中", "department": "普通科", "gender": "all", "score": "20.8", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 20.8}, {"school": "華江高中", "department": "普通科", "gender": "all", "score": "20.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 20.6}, {"school": "基隆安樂", "department": "普通科", "gender": "all", "score": "19.8", "a": 0, "aplus": 0, "b": 5, "bplus": 9, "parsed_score": 19.8}, {"school": "丹鳳高中", "department": "普通科", "gender": "all", "score": "19.8", "a": 0, "aplus": 0, "b": 5, "bplus": 9, "parsed_score": 19.8}, {"school": "大安高工", "department": "綜合高中/職科", "gender": "all", "score": "27.6~19.6", "a": 4, "aplus": 5, "b": 1, "bplus": 0, "parsed_score": 19.6}, {"school": "新北高中", "department": "普通科", "gender": "all", "score": "19.6", "a": 0, "aplus": 0, "b": 5, "bplus": 9, "parsed_score": 19.6}, {"school": "永春高中", "department": "普通科", "gender": "all", "score": "19.6", "a": 0, "aplus": 0, "b": 5, "bplus": 9, "parsed_score": 19.6}, {"school": "新店高中", "department": "普通科", "gender": "all", "score": "19.6", "a": 0, "aplus": 0, "b": 5, "bplus": 9, "parsed_score": 19.6}, {"school": "華僑高中", "department": "普通科", "gender": "all", "score": "18.8", "a": 0, "aplus": 0, "b": 5, "bplus": 8, "parsed_score": 18.8}, {"school": "竹圍高中", "department": "普通科", "gender": "all", "score": "18.6", "a": 0, "aplus": 0, "b": 5, "bplus": 8, "parsed_score": 18.6}, {"school": "錦和高中", "department": "普通科", "gender": "all", "score": "18.6", "a": 0, "aplus": 0, "b": 5, "bplus": 8, "parsed_score": 18.6}, {"school": "三民高中", "department": "普通科", "gender": "all", "score": "17.8", "a": 0, "aplus": 0, "b": 5, "bplus": 7, "parsed_score": 17.8}, {"school": "萬芳高中", "department": "普通科", "gender": "all", "score": "17.6", "a": 0, "aplus": 0, "b": 5, "bplus": 7, "parsed_score": 17.6}, {"school": "大理高中", "department": "普通科", "gender": "all", "score": "17.6", "a": 0, "aplus": 0, "b": 5, "bplus": 7, "parsed_score": 17.6}, {"school": "光復高中", "department": "普通科", "gender": "all", "score": "16.8", "a": 0, "aplus": 0, "b": 5, "bplus": 6, "parsed_score": 16.8}, {"school": "三重高中", "department": "普通科", "gender": "all", "score": "16.8", "a": 0, "aplus": 0, "b": 5, "bplus": 6, "parsed_score": 16.8}, {"school": "士林高商", "department": "綜合高中/職科", "gender": "all", "score": "22.6~16.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 16.6}, {"school": "育成高中", "department": "普通科", "gender": "all", "score": "16.6", "a": 0, "aplus": 0, "b": 5, "bplus": 6, "parsed_score": 16.6}, {"school": "松山家商", "department": "綜合高中/職科", "gender": "all", "score": "20.6~15.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 15.6}, {"school": "清水高中", "department": "普通科", "gender": "all", "score": "15.6", "a": 0, "aplus": 0, "b": 5, "bplus": 5, "parsed_score": 15.6}, {"school": "安康高中", "department": "普通科", "gender": "all", "score": "15.6", "a": 0, "aplus": 0, "b": 5, "bplus": 5, "parsed_score": 15.6}, {"school": "樹林高中", "department": "普通科", "gender": "all", "score": "14.8", "a": 0, "aplus": 0, "b": 5, "bplus": 4, "parsed_score": 14.8}, {"school": "松山工農", "department": "綜合高中/職科", "gender": "all", "score": "20.6~14.6", "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 14.6}, {"school": "林口高中", "department": "普通科", "gender": "all", "score": "14.6", "a": 0, "aplus": 0, "b": 5, "bplus": 4, "parsed_score": 14.6}, {"school": "新北高工", "department": "綜合高中/職科", "gender": "all", "score": "17.6~13.6", "a": 0, "aplus": 0, "b": 5, "bplus": 7, "parsed_score": 13.6}, {"school": "泰山高中", "department": "普通科", "gender": "all", "score": "13.6", "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 13.6}, {"school": "復興高中", "department": "普通科", "gender": "all", "score": "13.6", "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 13.6}, {"school": "秀峰高中", "department": "普通科", "gender": "all", "score": "13.6", "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 13.6}, {"school": "明德高中", "department": "普通科", "gender": "all", "score": "12.6", "a": 0, "aplus": 0, "b": 5, "bplus": 2, "parsed_score": 12.6}, {"school": "石碇高中", "department": "普通科", "gender": "all", "score": "12.6", "a": 0, "aplus": 0, "b": 5, "bplus": 2, "parsed_score": 12.6}, {"school": "淡水商工", "department": "綜合高中/職科", "gender": "all", "score": "17.6~12.6", "a": 0, "aplus": 0, "b": 5, "bplus": 7, "parsed_score": 12.6}, {"school": "三重商工", "department": "綜合高中/職科", "gender": "all", "score": "17.6~12.6", "a": 0, "aplus": 0, "b": 5, "bplus": 7, "parsed_score": 12.6}, {"school": "內湖高工", "department": "綜合高中/職科", "gender": "all", "score": "15.6~11.6", "a": 0, "aplus": 0, "b": 5, "bplus": 5, "parsed_score": 11.6}, {"school": "南港高工", "department": "綜合高中/職科", "gender": "all", "score": "15.6~11.6", "a": 0, "aplus": 0, "b": 5, "bplus": 5, "parsed_score": 11.6}, {"school": "木柵高工", "department": "綜合高中/職科", "gender": "all", "score": "15.6~11.6", "a": 0, "aplus": 0, "b": 5, "bplus": 5, "parsed_score": 11.6}, {"school": "樟樹高工", "department": "綜合高中/職科", "gender": "all", "score": "14.6~10.6", "a": 0, "aplus": 0, "b": 5, "bplus": 4, "parsed_score": 10.6}, {"school": "鶯歌工商", "department": "綜合高中/職科", "gender": "all", "score": "14.6~10.6", "a": 0, "aplus": 0, "b": 5, "bplus": 4, "parsed_score": 10.6}, {"school": "基隆商工", "department": "綜合高中/職科", "gender": "all", "score": "15.6~11.6", "a": 0, "aplus": 0, "b": 5, "bplus": 5, "parsed_score": 11.6}, {"school": "海大附中", "department": "綜合高中/職科", "gender": "all", "score": "13.6~9.6", "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 9.6}, {"school": "瑞芳高工", "department": "綜合高中/職科", "gender": "all", "score": "13.6~9.6", "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 9.6}, {"school": "基隆女中", "department": "普通科", "gender": "f", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "基中(男)", "department": "普通科", "gender": "m", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "基中(女)", "department": "普通科", "gender": "f", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "基隆暖暖", "department": "普通科", "gender": "all", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "基隆中山", "department": "普通科", "gender": "all", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "基隆八斗", "department": "普通科", "gender": "all", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "雙溪高中", "department": "普通科", "gender": "all", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}, {"school": "金山高中", "department": "普通科", "gender": "all", "score": "不足額", "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 0.0}];
+
+    // === 中投區 ===
+    const dataTaichung113 = [{"school": "臺中一中", "department": "普通科", "gender": "m", "score": "5A6+作文4級分 國A++", "a": 5, "aplus": 6, "b": 0, "bplus": 0, "tc_score": 30, "tc_dots": 97, "writing": 4}, {"school": "臺中女中", "department": "普通科", "gender": "f", "score": "5A4+作文5級分 國A 數英A++", "a": 5, "aplus": 4, "b": 0, "bplus": 0, "tc_score": 30, "tc_dots": 92, "writing": 5}, {"school": "中科實中", "department": "普通科", "gender": "all", "score": "5A4+作文4級分 國A+ 數A++", "a": 5, "aplus": 4, "b": 0, "bplus": 0, "tc_score": 30, "tc_dots": 91, "writing": 4}, {"school": "興大附中", "department": "普通科", "gender": "all", "score": "4A1B10+ 作文5級分", "a": 4, "aplus": 8, "b": 1, "bplus": 2, "tc_score": 28, "tc_dots": 101, "writing": 5}, {"school": "文華高中(男)", "department": "普通科", "gender": "m", "score": "4A1B7+作文4級分", "a": 4, "aplus": 7, "b": 1, "bplus": 0, "tc_score": 28, "tc_dots": 91, "writing": 4}, {"school": "文華高中(女)", "department": "普通科", "gender": "f", "score": "4A1B5+作文4級分 國A 數A+", "a": 4, "aplus": 5, "b": 1, "bplus": 0, "tc_score": 28, "tc_dots": 85, "writing": 4}, {"school": "惠文高中", "department": "普通科", "gender": "all", "score": "4A1B4+作文4級分", "a": 4, "aplus": 4, "b": 1, "bplus": 0, "tc_score": 28, "tc_dots": 82, "writing": 4}, {"school": "臺中二中(男)", "department": "普通科", "gender": "m", "score": "3A2B4+作文4級分", "a": 3, "aplus": 4, "b": 2, "bplus": 0, "tc_score": 26, "tc_dots": 73, "writing": 4}, {"school": "臺中二中(女)", "department": "普通科", "gender": "f", "score": "3A2B3+作文5級分", "a": 3, "aplus": 3, "b": 2, "bplus": 0, "tc_score": 26, "tc_dots": 71, "writing": 5}, {"school": "忠明高中", "department": "普通科", "gender": "all", "score": "3A2B3+作文4級分", "a": 3, "aplus": 3, "b": 2, "bplus": 0, "tc_score": 26, "tc_dots": 70, "writing": 4}, {"school": "西苑高中", "department": "普通科", "gender": "all", "score": "2A3B6+作文4級分", "a": 2, "aplus": 4, "b": 3, "bplus": 2, "tc_score": 24, "tc_dots": 70, "writing": 4}, {"school": "東山高中", "department": "普通科", "gender": "all", "score": "2A3B6+作文4級分", "a": 2, "aplus": 4, "b": 3, "bplus": 2, "tc_score": 24, "tc_dots": 70, "writing": 4}, {"school": "大里高中", "department": "普通科", "gender": "all", "score": "2A3B4+作文4級分", "a": 2, "aplus": 4, "b": 3, "bplus": 0, "tc_score": 24, "tc_dots": 64, "writing": 4}, {"school": "清水高中", "department": "普通科", "gender": "all", "score": "1A4B6+作文4級分", "a": 1, "aplus": 2, "b": 4, "bplus": 4, "tc_score": 22, "tc_dots": 61, "writing": 4}, {"school": "豐原高中", "department": "普通科", "gender": "all", "score": "1A4B5+作文4級分", "a": 1, "aplus": 2, "b": 4, "bplus": 3, "tc_score": 22, "tc_dots": 58, "writing": 4}, {"school": "長億高中", "department": "普通科", "gender": "all", "score": "1A4B5+作文4級分", "a": 1, "aplus": 2, "b": 4, "bplus": 3, "tc_score": 22, "tc_dots": 58, "writing": 4}, {"school": "中港高中", "department": "普通科", "gender": "all", "score": "5B7+作文4級分", "a": 0, "aplus": 0, "b": 5, "bplus": 7, "tc_score": 20, "tc_dots": 55, "writing": 4}, {"school": "大甲高中", "department": "普通科", "gender": "all", "score": "5B2+作文4級分", "a": 0, "aplus": 0, "b": 5, "bplus": 2, "tc_score": 20, "tc_dots": 40, "writing": 4}, {"school": "龍津高中", "department": "普通科", "gender": "all", "score": "5B3+作文3級分", "a": 0, "aplus": 0, "b": 5, "bplus": 3, "tc_score": 20, "tc_dots": 42, "writing": 3}, {"school": "后綜高中", "department": "普通科", "gender": "all", "score": "4B1C8+作文3級分", "a": 0, "aplus": 0, "b": 4, "bplus": 8, "tc_score": 18, "tc_dots": 54, "writing": 3}, {"school": "新社高中", "department": "普通科", "gender": "all", "score": "4B1C3+作文4級分", "a": 0, "aplus": 0, "b": 4, "bplus": 3, "tc_score": 18, "tc_dots": 40, "writing": 4}];
+    const dataTaichung114 = dataTaichung113; // 暫時共用113資料
+
+    // === 高雄區 ===
+    const dataKao113 = [{"school": "高雄中學", "department": "普通科", "gender": "m", "score": "30", "a": 5, "aplus": 5, "b": 0, "bplus": 0, "parsed_score": 30.0}, {"school": "高雄女中", "department": "普通科", "gender": "f", "score": "30", "a": 5, "aplus": 3, "b": 0, "bplus": 0, "parsed_score": 30.0}, {"school": "高師大附中", "department": "普通科", "gender": "all", "score": "30", "a": 5, "aplus": 3, "b": 0, "bplus": 0, "parsed_score": 30.0}, {"school": "鳳山高中", "department": "普通科", "gender": "all", "score": "28", "a": 4, "aplus": 5, "b": 1, "bplus": 0, "parsed_score": 28.0}, {"school": "新莊高中", "department": "普通科", "gender": "all", "score": "26", "a": 3, "aplus": 6, "b": 1, "bplus": 0, "parsed_score": 26.0}, {"school": "鳳新高中", "department": "普通科", "gender": "all", "score": "26", "a": 3, "aplus": 5, "b": 2, "bplus": 0, "parsed_score": 26.0}, {"school": "瑞祥高中", "department": "普通科", "gender": "all", "score": "26", "a": 2, "aplus": 4, "b": 3, "bplus": 3, "parsed_score": 26.0}, {"school": "中山大學附中", "department": "普通科", "gender": "all", "score": "26", "a": 2, "aplus": 4, "b": 3, "bplus": 0, "parsed_score": 26.0}, {"school": "新興高中", "department": "普通科", "gender": "all", "score": "24", "a": 2, "aplus": 0, "b": 3, "bplus": 0, "parsed_score": 24.0}, {"school": "中正高中", "department": "普通科", "gender": "all", "score": "24", "a": 2, "aplus": 0, "b": 3, "bplus": 0, "parsed_score": 24.0}, {"school": "三民高中", "department": "普通科", "gender": "all", "score": "22", "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 22.0}, {"school": "前鎮高中", "department": "普通科", "gender": "all", "score": "22", "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 22.0}, {"school": "福誠高中", "department": "普通科", "gender": "all", "score": "22", "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 22.0}, {"school": "中山高中", "department": "普通科", "gender": "all", "score": "20", "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "文山高中", "department": "普通科", "gender": "all", "score": "20", "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "小港高中", "department": "普通科", "gender": "all", "score": "20", "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "左營高中", "department": "普通科", "gender": "all", "score": "20", "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "高雄高商", "department": "綜合高中/職科", "gender": "all", "score": "20", "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "高雄高工", "department": "綜合高中/職科", "gender": "all", "score": "22~18", "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 18.0}, {"school": "中正高工", "department": "綜合高中/職科", "gender": "all", "score": "20", "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "鼓山高中", "department": "普通科", "gender": "all", "score": "20", "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "楠梓高中", "department": "普通科", "gender": "all", "score": "20", "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "岡山高中", "department": "普通科", "gender": "all", "score": "20", "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "鳳山商工", "department": "綜合高中/職科", "gender": "all", "score": "20", "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "仁武高中", "department": "普通科", "gender": "all", "score": "18", "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 18.0}, {"school": "林園高中", "department": "普通科", "gender": "all", "score": "18", "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 18.0}];
+    const dataKao114 = [{"school": "高雄高中", "department": "普通科", "gender": "m", "score": 30, "a": 5, "aplus": 5, "b": 0, "bplus": 0, "parsed_score": 30.0}, {"school": "高雄女中", "department": "普通科", "gender": "f", "score": 30, "a": 5, "aplus": 3, "b": 0, "bplus": 0, "parsed_score": 30.0}, {"school": "師大附中", "department": "普通科", "gender": "all", "score": 30, "a": 5, "aplus": 3, "b": 0, "bplus": 0, "parsed_score": 30.0}, {"school": "鳳山高中", "department": "普通科", "gender": "all", "score": 28, "a": 4, "aplus": 5, "b": 1, "bplus": 0, "parsed_score": 28.0}, {"school": "新莊高中", "department": "普通科", "gender": "all", "score": 26, "a": 3, "aplus": 6, "b": 2, "bplus": 0, "parsed_score": 26.0}, {"school": "鳳新高中", "department": "普通科", "gender": "all", "score": 26, "a": 3, "aplus": 5, "b": 2, "bplus": 0, "parsed_score": 26.0}, {"school": "中正高中", "department": "普通科", "gender": "all", "score": 26, "a": 3, "aplus": 0, "b": 2, "bplus": 0, "parsed_score": 26.0}, {"school": "瑞祥高中", "department": "普通科", "gender": "all", "score": 24, "a": 2, "aplus": 4, "b": 3, "bplus": 0, "parsed_score": 24.0}, {"school": "中山附中", "department": "普通科", "gender": "all", "score": 24, "a": 2, "aplus": 4, "b": 3, "bplus": 0, "parsed_score": 24.0}, {"school": "新興高中", "department": "普通科", "gender": "all", "score": 24, "a": 2, "aplus": 0, "b": 3, "bplus": 0, "parsed_score": 24.0}, {"school": "三民高中", "department": "普通科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 22.0}, {"school": "前鎮高中", "department": "普通科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 22.0}, {"school": "福誠高中", "department": "普通科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 22.0}, {"school": "文山高中", "department": "普通科", "gender": "all", "score": 22, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 22.0}, {"school": "高雄高商", "department": "綜合高中/職科", "gender": "all", "score": 22, "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 22.0}, {"school": "中山高中", "department": "普通科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "左營高中", "department": "普通科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "鼓山高中", "department": "普通科", "gender": "all", "score": 20, "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 20.0}, {"school": "小港高中", "department": "普通科", "gender": "all", "score": 18, "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 18.0}, {"school": "楠梓高中", "department": "普通科", "gender": "all", "score": 18, "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 18.0}, {"school": "岡山高中", "department": "普通科", "gender": "all", "score": 18, "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 18.0}, {"school": "仁武高中", "department": "普通科", "gender": "all", "score": 18, "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 18.0}, {"school": "林園高中", "department": "普通科", "gender": "all", "score": 18, "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 18.0}];
+
+    // === 桃連區 ===
+    const dataTaoy113 = [{"school": "武陵高中", "department": "普通科", "gender": "all", "score": 33.0, "total_points": 32, "a": 5, "aplus": 2, "b": 0, "bplus": 0, "parsed_score": 33.0}, {"school": "中壢高中", "department": "普通科", "gender": "all", "score": 31.0, "total_points": 28, "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 31.0}, {"school": "桃園高中", "department": "普通科", "gender": "all", "score": 31.0, "total_points": 24, "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 31.0}, {"school": "內壢高中", "department": "普通科", "gender": "all", "score": 29.0, "total_points": 23, "a": 3, "aplus": 1, "b": 2, "bplus": 0, "parsed_score": 29.0}, {"school": "陽明高中", "department": "普通科", "gender": "all", "score": 27.0, "total_points": 21, "a": 2, "aplus": 0, "b": 3, "bplus": 0, "parsed_score": 27.0}, {"school": "平鎮高中", "department": "普通科", "gender": "all", "score": 27.0, "total_points": 19, "a": 2, "aplus": 0, "b": 3, "bplus": 0, "parsed_score": 27.0}, {"school": "永豐高中", "department": "普通科", "gender": "all", "score": 25.0, "total_points": 19, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 25.0}, {"school": "大園高中", "department": "普通科", "gender": "all", "score": 25.0, "total_points": 16, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 25.0}, {"school": "南崁高中", "department": "普通科", "gender": "all", "score": 25.0, "total_points": 13, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 25.0}, {"school": "壽山高中", "department": "普通科", "gender": "all", "score": 23.0, "total_points": 18, "a": 0, "aplus": 0, "b": 5, "bplus": 2, "parsed_score": 23.0}, {"school": "龍潭高中", "department": "普通科", "gender": "all", "score": 23.0, "total_points": 17, "a": 0, "aplus": 0, "b": 5, "bplus": 2, "parsed_score": 23.0}, {"school": "楊梅高中", "department": "普通科", "gender": "all", "score": 23.0, "total_points": 13, "a": 0, "aplus": 0, "b": 5, "bplus": 1, "parsed_score": 23.0}, {"school": "觀音高中", "department": "普通科", "gender": "all", "score": 23.0, "total_points": 10, "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 23.0}, {"school": "大溪高中", "department": "普通科", "gender": "all", "score": 21.0, "total_points": 9, "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 21.0}];
+    const dataTaoy114 = [{"school": "武陵高中", "department": "普通科", "gender": "all", "score": 33.0, "total_points": 31, "a": 5, "aplus": 2, "b": 0, "bplus": 0, "parsed_score": 33.0}, {"school": "中壢高中", "department": "普通科", "gender": "all", "score": 31.0, "total_points": 27, "a": 4, "aplus": 0, "b": 1, "bplus": 0, "parsed_score": 31.0}, {"school": "桃園高中", "department": "普通科", "gender": "all", "score": 29.0, "total_points": 27, "a": 3, "aplus": 1, "b": 2, "bplus": 2, "parsed_score": 29.0}, {"school": "內壢高中", "department": "普通科", "gender": "all", "score": 29.0, "total_points": 23, "a": 3, "aplus": 0, "b": 2, "bplus": 2, "parsed_score": 29.0}, {"school": "陽明高中", "department": "普通科", "gender": "all", "score": 27.0, "total_points": 19, "a": 2, "aplus": 0, "b": 3, "bplus": 2, "parsed_score": 27.0}, {"school": "平鎮高中", "department": "普通科", "gender": "all", "score": 25.0, "total_points": 21, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 25.0}, {"school": "永豐高中", "department": "普通科", "gender": "all", "score": 25.0, "total_points": 18, "a": 1, "aplus": 0, "b": 4, "bplus": 2, "parsed_score": 25.0}, {"school": "壢商", "department": "綜合高中/職科", "gender": "all", "score": 25.0, "total_points": 16, "a": 1, "aplus": 0, "b": 4, "bplus": 2, "parsed_score": 25.0}, {"school": "南崁高中", "department": "普通科", "gender": "all", "score": 23.0, "total_points": 17, "a": 0, "aplus": 0, "b": 5, "bplus": 2, "parsed_score": 23.0}, {"school": "大園高中", "department": "普通科", "gender": "all", "score": 23.0, "total_points": 17, "a": 0, "aplus": 0, "b": 5, "bplus": 2, "parsed_score": 23.0}, {"school": "壽山高中", "department": "普通科", "gender": "all", "score": 23.0, "total_points": 16, "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 23.0}, {"school": "龍潭高中", "department": "普通科", "gender": "all", "score": 23.0, "total_points": 15, "a": 0, "aplus": 0, "b": 5, "bplus": 2, "parsed_score": 23.0}, {"school": "楊梅高中", "department": "普通科", "gender": "all", "score": 23.0, "total_points": 11, "a": 0, "aplus": 0, "b": 5, "bplus": 1, "parsed_score": 23.0}, {"school": "觀音高中", "department": "普通科", "gender": "all", "score": 21.0, "total_points": 10, "a": 0, "aplus": 0, "b": 4, "bplus": 1, "parsed_score": 21.0}];
+
+    // === 台南區 ===
+    const dataTainan114 = [{"school": "台南一中", "department": "普通科", "gender": "m", "score": 28.8, "a": 4, "aplus": 2, "b": 1, "bplus": 0, "parsed_score": 28.8}, {"school": "台南女中", "department": "普通科", "gender": "f", "score": 27.6, "a": 3, "aplus": 3, "b": 2, "bplus": 0, "parsed_score": 27.6}, {"school": "南科實驗高中", "department": "普通科", "gender": "all", "score": 27.6, "a": 3, "aplus": 3, "b": 2, "bplus": 0, "parsed_score": 27.6}, {"school": "家齊高中(男)", "department": "普通科", "gender": "m", "score": 26.6, "a": 3, "aplus": 1, "b": 2, "bplus": 0, "parsed_score": 26.6}, {"school": "家齊高中(女)", "department": "普通科", "gender": "f", "score": 24.6, "a": 2, "aplus": 2, "b": 3, "bplus": 0, "parsed_score": 24.6}, {"school": "台南二中", "department": "普通科", "gender": "all", "score": 23.6, "a": 2, "aplus": 0, "b": 3, "bplus": 0, "parsed_score": 23.6}, {"school": "新營高中", "department": "普通科", "gender": "all", "score": 23.6, "a": 2, "aplus": 0, "b": 3, "bplus": 0, "parsed_score": 23.6}, {"school": "大灣高中", "department": "普通科", "gender": "all", "score": 21.6, "a": 1, "aplus": 2, "b": 4, "bplus": 0, "parsed_score": 21.6}, {"school": "南大附中", "department": "普通科", "gender": "all", "score": 21.6, "a": 1, "aplus": 2, "b": 4, "bplus": 0, "parsed_score": 21.6}, {"school": "南大附中", "department": "綜合高中/職科", "gender": "all", "score": 18.6, "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 18.6}, {"school": "永仁高中", "department": "普通科", "gender": "all", "score": 16.6, "a": 0, "aplus": 0, "b": 5, "bplus": 1, "parsed_score": 16.6}, {"school": "新化高中", "department": "普通科", "gender": "all", "score": 15.6, "a": 0, "aplus": 0, "b": 5, "bplus": 0, "parsed_score": 15.6}, {"school": "南寧高中", "department": "普通科", "gender": "all", "score": 14.6, "a": 0, "aplus": 0, "b": 4, "bplus": 2, "parsed_score": 14.6}, {"school": "土城高中", "department": "普通科", "gender": "all", "score": 13.6, "a": 0, "aplus": 0, "b": 4, "bplus": 1, "parsed_score": 13.6}, {"school": "新豐高中", "department": "普通科", "gender": "all", "score": 12.6, "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 12.6}, {"school": "北門高中", "department": "普通科", "gender": "all", "score": 12.6, "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 12.6}, {"school": "善化高中", "department": "普通科", "gender": "all", "score": 12.4, "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 12.4}, {"school": "曾文農工", "department": "普通科", "gender": "all", "score": 10.2, "a": 0, "aplus": 0, "b": 3, "bplus": 0, "parsed_score": 10.2}, {"school": "後壁高中", "department": "普通科", "gender": "all", "score": 10.2, "a": 0, "aplus": 0, "b": 3, "bplus": 0, "parsed_score": 10.2}, {"school": "玉井工商", "department": "普通科", "gender": "all", "score": 10.2, "a": 0, "aplus": 0, "b": 3, "bplus": 0, "parsed_score": 10.2}, {"school": "德光中學", "department": "普通科", "gender": "all", "score": 20.6, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 20.6}, {"school": "港明中學", "department": "普通科", "gender": "all", "score": 16.6, "a": 0, "aplus": 0, "b": 5, "bplus": 1, "parsed_score": 16.6}, {"school": "聖功女中", "department": "普通科", "gender": "f", "score": 16.6, "a": 0, "aplus": 0, "b": 5, "bplus": 1, "parsed_score": 16.6}, {"school": "瀛海中學", "department": "普通科", "gender": "all", "score": 13.6, "a": 0, "aplus": 0, "b": 4, "bplus": 1, "parsed_score": 13.6}, {"school": "慈濟高中", "department": "普通科", "gender": "all", "score": 12.6, "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 12.6}, {"school": "長榮中學", "department": "普通科", "gender": "all", "score": 11.6, "a": 0, "aplus": 0, "b": 3, "bplus": 2, "parsed_score": 11.6}, {"school": "光華高中", "department": "普通科", "gender": "all", "score": 11.6, "a": 0, "aplus": 0, "b": 3, "bplus": 2, "parsed_score": 11.6}, {"school": "光華高中", "department": "綜合高中/職科", "gender": "all", "score": 10.6, "a": 0, "aplus": 0, "b": 3, "bplus": 1, "parsed_score": 10.6}, {"school": "六信高中", "department": "普通科", "gender": "all", "score": 11.6, "a": 0, "aplus": 0, "b": 3, "bplus": 2, "parsed_score": 11.6}, {"school": "台南高工", "department": "機械科", "gender": "all", "score": 14.4, "a": 0, "aplus": 0, "b": 4, "bplus": 2, "parsed_score": 14.4}, {"school": "台南高工", "department": "鑄造科", "gender": "all", "score": 11.4, "a": 0, "aplus": 0, "b": 3, "bplus": 2, "parsed_score": 11.4}, {"school": "台南高工", "department": "汽車科", "gender": "all", "score": 14.4, "a": 0, "aplus": 0, "b": 4, "bplus": 2, "parsed_score": 14.4}, {"school": "台南高工", "department": "板金科", "gender": "all", "score": 10.4, "a": 0, "aplus": 0, "b": 3, "bplus": 1, "parsed_score": 10.4}, {"school": "台南高工", "department": "資訊科", "gender": "all", "score": 16.4, "a": 0, "aplus": 0, "b": 5, "bplus": 1, "parsed_score": 16.4}, {"school": "台南高工", "department": "電子科", "gender": "all", "score": 17.4, "a": 0, "aplus": 0, "b": 5, "bplus": 2, "parsed_score": 17.4}, {"school": "台南高工", "department": "電機科", "gender": "all", "score": 20.4, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 20.4}, {"school": "台南高工", "department": "建築科", "gender": "all", "score": 12.4, "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 12.4}, {"school": "台南高工", "department": "化工科", "gender": "all", "score": 16.4, "a": 0, "aplus": 0, "b": 5, "bplus": 1, "parsed_score": 16.4}, {"school": "台南高工", "department": "製圖科", "gender": "all", "score": 13.4, "a": 0, "aplus": 0, "b": 4, "bplus": 1, "parsed_score": 13.4}, {"school": "台南高工", "department": "土木科", "gender": "all", "score": 12.4, "a": 0, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 12.4}, {"school": "台南高工", "department": "飛機修護科", "gender": "all", "score": 20.4, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 20.4}, {"school": "台南高商", "department": "商業經營科", "gender": "all", "score": 17.4, "a": 0, "aplus": 0, "b": 5, "bplus": 2, "parsed_score": 17.4}, {"school": "台南高商", "department": "國際貿易科", "gender": "all", "score": 18.4, "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 18.4}, {"school": "台南高商", "department": "會計事務科", "gender": "all", "score": 17.4, "a": 0, "aplus": 0, "b": 5, "bplus": 2, "parsed_score": 17.4}, {"school": "台南高商", "department": "資料處理科", "gender": "all", "score": 17.4, "a": 0, "aplus": 0, "b": 5, "bplus": 2, "parsed_score": 17.4}, {"school": "台南高商", "department": "廣告設計科", "gender": "all", "score": 18.4, "a": 0, "aplus": 0, "b": 5, "bplus": 3, "parsed_score": 18.4}, {"school": "台南高商", "department": "觀光事業科", "gender": "all", "score": 17.4, "a": 0, "aplus": 0, "b": 5, "bplus": 2, "parsed_score": 17.4}, {"school": "台南高商", "department": "應用英語科", "gender": "all", "score": 19.4, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 19.4}, {"school": "家齊高中", "department": "餐飲管理科", "gender": "all", "score": 20.4, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 20.4}, {"school": "家齊高中", "department": "流行服飾科", "gender": "all", "score": 20.4, "a": 1, "aplus": 0, "b": 4, "bplus": 0, "parsed_score": 20.4}, {"school": "南護", "department": "護理科", "gender": "all", "score": 80.6, "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 80.6}, {"school": "南護", "department": "化妝品應用科", "gender": "all", "score": 77.6, "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 77.6}, {"school": "南護", "department": "老人服務事業科", "gender": "all", "score": 77.4, "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 77.4}, {"school": "文藻外語", "department": "英語科", "gender": "all", "score": 81.8, "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 81.8}, {"school": "文藻外語", "department": "德語科", "gender": "all", "score": 79.8, "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 79.8}, {"school": "文藻外語", "department": "法語科", "gender": "all", "score": 79.8, "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 79.8}, {"school": "文藻外語", "department": "西班牙語科", "gender": "all", "score": 80.1, "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 80.1}, {"school": "文藻外語", "department": "日語科", "gender": "all", "score": 80.6, "a": 0, "aplus": 0, "b": 0, "bplus": 0, "parsed_score": 80.6}];
+    const dataTainan113 = dataTainan114; 
+
+    // 切換考區介面變動
+    function toggleRegion() {
+        const region = document.getElementById('region').value;
+        const writingRow = document.getElementById('writing-row');
+        document.getElementById('results').innerHTML = ''; 
+        document.getElementById('year-tabs').style.display = 'none'; 
+        
+        if (region === 'taipei' || region === 'taichung') {
+            writingRow.style.display = 'flex';
+        } else {
+            writingRow.style.display = 'none';
+        }
+    }
+
+    function getRegionText(region) {
+        if (region === 'taipei') return '北北基';
+        if (region === 'taichung') return '中投區';
+        if (region === 'taoyuan') return '桃連區';
+        if (region === 'tainan') return '台南區';
+        if (region === 'kaohsiung') return '高雄區';
+        return '竹苗';
+    }
+
+    function initCalculate() {
+        const region = document.getElementById('region').value;
+        const tabsDiv = document.getElementById('year-tabs');
+        const regionText = getRegionText(region);
+
+        document.getElementById('tab-114').innerText = regionText + ' 114年';
+        document.getElementById('tab-113').innerText = regionText + ' 113年';
+
+        document.getElementById('tab-114').style.display = 'inline-block';
+        document.getElementById('tab-113').style.display = 'inline-block';
+
+        if (region === 'tainan') {
+            document.getElementById('tab-113').style.display = 'none';
+            currentYear = '114';
+        } else if (region === 'taichung') {
+            document.getElementById('tab-114').style.display = 'none';
+            currentYear = '113';
+        } else {
+            currentYear = '114';
+        }
+
+        tabsDiv.style.display = 'flex'; 
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('tab-' + currentYear).classList.add('active');
+        
+        calculateResults();
+    }
+
+    function switchYear(year) {
+        currentYear = year;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('tab-' + year).classList.add('active');
+        calculateResults();
+    }
+
+    // 各考區的錄取門檻判斷
+    function isEligible(user, school, region) {
+        if (region === 'taipei') {
+            if (user.taipeiScore > school.parsed_score) return true;
+            if (user.taipeiScore < school.parsed_score) return false;
+        } else if (region === 'taichung') {
+            if (user.score > school.tc_score) return true;
+            if (user.score < school.tc_score) return false;
+            if (user.tcDots > school.tc_dots) return true;
+            if (user.tcDots < school.tc_dots) return false;
+        } else if (region === 'taoyuan') {
+            if (user.taoyuanScore > school.parsed_score) return true;
+            if (user.taoyuanScore < school.parsed_score) return false;
+            if (user.taoyuanDots > school.total_points) return true;
+            if (user.taoyuanDots < school.total_points) return false;
+        } else if (region === 'tainan') {
+            if (user.score > school.parsed_score) return true;
+            if (user.score < Math.floor(school.parsed_score)) return false;
+        } else {
+            if (user.score > school.parsed_score || user.score > school.score) return true;
+            if (user.score < school.parsed_score || user.score < school.score) return false;
+        }
+        
+        // 進入同分比序：依序比 A數 > A+數 > B數 > B+數 
+        // 未來若需加入單科比序，可在此處運用 user.subjects (如 user.chi, user.mat...)
+        if (user.a > school.a) return true;
+        if (user.a < school.a) return false;
+        if (user.aplus > school.aplus) return true;
+        if (user.aplus < school.aplus) return false;
+        if (user.b > school.b) return true;
+        if (user.b < school.b) return false;
+        if (user.bplus >= school.bplus) return true;
+        return false;
+    }
+
+    function calculateResults() {
+        const region = document.getElementById('region').value;
+        const userGender = document.getElementById('gender').value;
+        const deptFilter = document.getElementById('dept-filter').value;
+        const searchKeyword = document.getElementById('searchInput').value.trim().toLowerCase();
+        
+        // 基礎積分結構與單科成績(為了真正的比序做保留)
+        let user = { 
+            score: 0, taipeiScore: 0, tcDots: 0, taoyuanScore: 0, taoyuanDots: 0, 
+            a: 0, aplus: 0, b: 0, bplus: 0,
+            subjects: { chi: 0, eng: 0, mat: 0, sci: 0, soc: 0 } // 保留單科強度框架
+        };
+
+        const writingLevelStr = document.getElementById('writing').value;
+        const taipeiWritingMap = { "6": 1, "5": 0.8, "4": 0.6, "3": 0.4, "2": 0.2, "1": 0.1, "0": 0 };
+        
+        if (region === 'taipei') user.taipeiScore += taipeiWritingMap[writingLevelStr];
+        else if (region === 'taichung') user.tcDots += parseInt(writingLevelStr);
+
+        const taipeiMap = { "6,2": 7, "6,1": 6, "6,0": 5, "4,2": 4, "4,1": 3, "4,0": 2, "2,0": 1 };
+        const tcBaseMap = { 6: 15, 4: 6, 2: 3 };
+        const taoyuanDotsMap = { "6,2": 7, "6,1": 6, "6,0": 5, "4,2": 4, "4,1": 3, "4,0": 2, "2,0": 1 };
+
+        // 解析五科成績
+        ['chi', 'eng', 'mat', 'sci', 'soc'].forEach(subject => {
+            const valString = document.getElementById(subject).value;
+            const [baseScore, plusCount] = valString.split(',').map(Number);
+            
+            user.subjects[subject] = baseScore; // 記錄單科
+            user.score += baseScore; 
+            user.taipeiScore += taipeiMap[valString]; 
+            user.tcDots += tcBaseMap[baseScore] + (plusCount * 3); 
+            user.taoyuanScore += baseScore; 
+            user.taoyuanDots += taoyuanDotsMap[valString]; 
+
+            if (baseScore === 6) { user.a += 1; user.aplus += plusCount; } 
+            else if (baseScore === 4) { user.b += 1; user.bplus += plusCount; }
+        });
+
+        user.taipeiScore = Math.round(user.taipeiScore * 10) / 10; 
+
+        // 選擇對應資料庫
+        let activeData = [];
+        if (region === 'taipei') activeData = (currentYear === '114') ? dataTaipei114 : dataTaipei113;
+        else if (region === 'taichung') activeData = dataTaichung113; 
+        else if (region === 'taoyuan') activeData = (currentYear === '114') ? dataTaoy114 : dataTaoy113;
+        else if (region === 'tainan') activeData = dataTainan114; 
+        else if (region === 'kaohsiung') activeData = (currentYear === '114') ? dataKao114 : dataKao113;
+        else activeData = (currentYear === '114') ? data114 : data113;
+
+        // 排序與多重條件篩選 (包含性別、科系偏好、關鍵字搜尋)
+        const sortedSchools = activeData
+            .filter(s => s.gender === 'all' || s.gender === userGender)
+            .filter(s => {
+                if (deptFilter === 'normal' && !s.department.includes('普通科')) return false;
+                if (deptFilter === 'vocational' && s.department === '普通科') return false;
+                return true;
+            })
+            .filter(s => {
+                if (!searchKeyword) return true;
+                return s.school.toLowerCase().includes(searchKeyword) || s.department.toLowerCase().includes(searchKeyword);
+            })
+            .sort((s1, s2) => {
+                // 排序邏輯
+                if (region === 'taipei') {
+                    if (s2.parsed_score !== s1.parsed_score) return s2.parsed_score - s1.parsed_score;
+                } else if (region === 'taichung') {
+                    if (s2.tc_score !== s1.tc_score) return s2.tc_score - s1.tc_score;
+                    if (s2.tc_dots !== s1.tc_dots) return s2.tc_dots - s1.tc_dots;
+                } else if (region === 'taoyuan') {
+                    if (s2.parsed_score !== s1.parsed_score) return s2.parsed_score - s1.parsed_score;
+                    if (s2.total_points !== s1.total_points) return s2.total_points - s1.total_points;
+                } else if (region === 'tainan') {
+                    if (s2.parsed_score !== s1.parsed_score) return s2.parsed_score - s1.parsed_score;
+                } else {
+                    let score1 = s1.parsed_score || s1.score;
+                    let score2 = s2.parsed_score || s2.score;
+                    if (score2 !== score1) return score2 - score1;
+                }
+                
+                // 次級比序
+                if (s2.a !== s1.a) return s2.a - s1.a;
+                if (s2.aplus !== s1.aplus) return s2.aplus - s1.aplus;
+                if (s2.b !== s1.b) return s2.b - s1.b;
+                return s2.bplus - s1.bplus;
+            });
+
+        // 找尋錄取門檻
+        let firstEligibleIndex = -1;
+        for (let i = 0; i < sortedSchools.length; i++) {
+            if (isEligible(user, sortedSchools[i], region)) {
+                firstEligibleIndex = i;
+                break;
+            }
+        }
+
+        let dream = [], ideal = [], safe = [];
+        if (firstEligibleIndex === -1) {
+            dream = sortedSchools.slice(-2);
+        } else {
+            const ineligible = sortedSchools.slice(0, firstEligibleIndex);
+            const eligible = sortedSchools.slice(firstEligibleIndex);
+            dream = ineligible.slice(-2);
+            ideal = eligible.slice(0, 5);
+            safe = eligible.slice(5);
+        }
+
+        displayResults(dream, ideal, safe, user, region);
+    }
+
+    // 生成響應式表格
+    function generateTableHTML(schools, region) {
+        if (schools.length === 0) return '<p style="text-align:center; color:#7f8c8d;">此區間目前無對應學校</p>';
+        
+        let scoreHeader = '積分';
+        if (region === 'taichung' || region === 'taoyuan') scoreHeader = '積分\\積點';
+        
+        let html = `
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>學校名稱</th>
+                            <th>科系</th>
+                            <th>${scoreHeader}</th>
+                            <th>A數量</th>
+                            <th>A的+數</th>
+                            <th>B數量</th>
+                            <th>B的+數</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        schools.forEach(s => {
+            let displayScore = s.score;
+            if (region === 'taoyuan') displayScore = `${s.score}分 / ${s.total_points}點`;
+
+            html += `
+                <tr>
+                    <td style="font-weight:bold;">${s.school}</td>
+                    <td>${s.department}</td>
+                    <td>${displayScore}</td>
+                    <td>${s.a}</td>
+                    <td>${s.aplus}</td>
+                    <td>${s.b}</td>
+                    <td>${s.bplus}</td>
+                </tr>
+            `;
+        });
+        html += `</tbody></table></div>`;
+        return html;
+    }
+
+    function displayResults(dream, ideal, safe, user, region) {
+        const resultsDiv = document.getElementById('results');
+        const regionText = getRegionText(region);
+
+        let scoreHTML = '';
+        if (region === 'taipei') scoreHTML = `總積分 ${user.taipeiScore} 分`;
+        else if (region === 'taichung') scoreHTML = `<span style="color:#e74c3c; font-weight:bold;">積分 ${user.score} 分 / 積點 ${user.tcDots} 點</span>`;
+        else if (region === 'taoyuan') scoreHTML = `<span style="color:#e74c3c; font-weight:bold;">積分 ${user.taoyuanScore} 分 / 積點 ${user.taoyuanDots} 點</span>`;
+        else scoreHTML = `總積分 ${user.score} 分`;
+
+        let html = `
+            <div class="user-score-box">
+                <strong>您的成績統計：</strong> ${scoreHTML} / ${user.a}A / ${user.aplus}+ / ${user.b}B / ${user.bplus}+
+                <div style="font-size:0.85rem; color:#7f8c8d; margin-top:5px;">目前顯示資料：${regionText} ${currentYear}年</div>
+            </div>
+        `;
+
+        html += `<h2 class="section-title dream-title">🌟 夢幻志願 <span style="font-size:0.9rem; color:#7f8c8d; font-weight:normal;">(比考生成績高，可填寫拚運氣)</span></h2>`;
+        html += generateTableHTML(dream, region);
+
+        html += `<h2 class="section-title ideal-title">🎯 理想志願 <span style="font-size:0.9rem; color:#7f8c8d; font-weight:normal;">(符合且最接近考生成績)</span></h2>`;
+        html += generateTableHTML(ideal, region);
+
+        html += `<h2 class="section-title safe-title">🛡️ 保底志願 <span style="font-size:0.9rem; color:#7f8c8d; font-weight:normal;">(比考生成績低，非常安全)</span></h2>`;
+        html += generateTableHTML(safe, region);
+
+        resultsDiv.innerHTML = html;
+    }
+</script>
+
+</body>
+</html>
